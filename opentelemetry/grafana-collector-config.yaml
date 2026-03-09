@@ -15,6 +15,12 @@ receivers:
       memory:
 
 processors:
+  filter/drop_bot_404s:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor
+    error_mode: ignore
+    logs:
+      log_record:
+        - '(attributes["http.status_code"] == 404 or attributes["http.response.status_code"] == 404 or IsMatch(body, "(^|[[:space:]\"])404([[:space:]\"]|$)")) and (IsMatch(attributes["url.path"], "(?i)(/wp-[^/[:space:]]+\\.php|/\\.env(?:\\.|$)|/xmlrpc\\.php|/phpmyadmin(?:/|$)|/\\.git(?:/|$)|/vendor/phpunit(?:/|$))") or IsMatch(attributes["http.target"], "(?i)(/wp-[^/[:space:]]+\\.php|/\\.env(?:\\.|$)|/xmlrpc\\.php|/phpmyadmin(?:/|$)|/\\.git(?:/|$)|/vendor/phpunit(?:/|$))") or IsMatch(body, "(?i)(/wp-[^/[:space:]]+\\.php|/\\.env(?:\\.|$)|/xmlrpc\\.php|/phpmyadmin(?:/|$)|/\\.git(?:/|$)|/vendor/phpunit(?:/|$))"))'
   batch:
     # https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor
   resourcedetection:
@@ -122,6 +128,7 @@ service:
         [
           resourcedetection,
           transform/drop_unneeded_resource_attributes,
+          filter/drop_bot_404s,
           batch,
         ]
       exporters: [otlphttp/grafana_cloud]
